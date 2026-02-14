@@ -31,21 +31,21 @@ def houses():
     except:
         return jsonify({"error": "Invalid parameters"}), 400
 
-    # Convert local time → UTC
+    # Convert to UTC
     decimal_hour = hour + minute / 60.0
     utc_hour = decimal_hour - tz
 
     jd = swe.julday(year, month, day, utc_hour)
 
-    # 🔥 USE BUILT-IN KP AYANAMSA
+    # KP ayanamsa
     swe.set_sid_mode(swe.SIDM_KRISHNAMURTI)
 
-    # Direct sidereal houses (correct way)
+    # 🔥 EQUAL HOUSE SYSTEM
     cusps, ascmc = swe.houses_ex(
         jd,
         lat,
         lon,
-        b'P',
+        b'E',
         swe.FLG_SIDEREAL
     )
 
