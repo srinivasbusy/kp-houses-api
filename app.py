@@ -3,12 +3,14 @@ import swisseph as swe
 
 app = Flask(__name__)
 
-# Set KP-compatible Lahiri
+# Set Lahiri (KP compatible baseline)
 swe.set_sid_mode(swe.SIDM_LAHIRI, 0, 0)
+
 
 @app.route("/")
 def home():
     return "KP Houses API Running"
+
 
 @app.route("/houses")
 def houses():
@@ -21,13 +23,13 @@ def houses():
             jd,
             lat,
             lon,
-            b'P',              # Placidus
-            swe.FLG_SIDEREAL   # Sidereal mode
+            b'P',
+            swe.FLG_SIDEREAL
         )
 
         return jsonify({
             "cusps": list(cusps[:12]),
-            "asc": ascmc[0],
+            "asc": cusps[0],
             "mc": ascmc[1]
         })
 
