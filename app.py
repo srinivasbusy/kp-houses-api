@@ -37,15 +37,14 @@ def houses():
 
     jd = swe.julday(year, month, day, utc_hour)
 
-    # KP ayanamsa
+    # Use official KP ayanamsa
     swe.set_sid_mode(swe.SIDM_KRISHNAMURTI)
 
-    # 🔥 EQUAL HOUSE SYSTEM
     cusps, ascmc = swe.houses_ex(
         jd,
         lat,
         lon,
-        b'E',
+        b'P',
         swe.FLG_SIDEREAL
     )
 
