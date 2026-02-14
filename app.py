@@ -4,16 +4,15 @@ import os
 
 app = Flask(__name__)
 
-# Set Swiss Ephemeris path
+# Set Swiss ephemeris path
 swe.set_ephe_path(".")
 
-# KP Old Ayanamsa = 23°34'23"
-# Convert to arcseconds
+# KP Old ayanamsa = 23°34'23"
+# Convert to arcseconds:
 # 23° = 23 * 3600 = 82800
 # 34' = 34 * 60 = 2040
 # 23" = 23
 # Total = 84863 arcseconds
-
 KP_OLD_ARCSECONDS = 84863
 
 
@@ -34,43 +33,54 @@ def houses():
         minute = int(request.args.get("minute"))
 
         lat = float(request.args.get("lat"))
-        lon = -float(request.args.get("lon"))
+        lon = float(request.args.get("lon"))
 
-
-        tz = float(request.args.get("tz"))  # timezone like 5.5 for IST
+        tz = float(request.args.get("tz"))
 
     except:
         return jsonify({"error": "Invalid parameters"}), 400
 
-    # Convert local time to UTC
+    # -------------------------
+    # 1️⃣ Convert Local Time → UTC
+    # -------------------------
     decimal_hour = hour + (minute / 60.0)
     utc_hour = decimal_hour - tz
 
-    # Calculate Julian Day (UTC)
+    # If UTC becomes negative or > 24, Swiss handles it internally
     jd = swe.julday(year, month, day, utc_hour)
 
-    # Set KP Old ayanamsa
+    # -------------------------
+    # 2️⃣ Compute Tropical Houses
+    # -------------------------
+    cusps, ascmc = swe.houses(jd, lat, lon, b'P')  # Placidus
+
+    # -------------------------
+    # 3️⃣ Get KP Old Ayanamsa
+    # -------------------------
     swe.set_sid_mode(swe.SIDM_USER, KP_OLD_ARCSECONDS, 0)
+    ayan = swe.get_ayanamsa(jd)
 
-    # Calculate houses (Placidus + Sidereal)
-    cusps, ascmc = swe.houses_ex(
-        jd,
-        lat,
-        lon,
-        b'P',                # Placidus
-        swe.FLG_SIDEREAL     # Important
-    )
+    # -------------------------
+    # 4️⃣ Convert to Sidereal (KP style)
+    # -------------------------
+    sidereal_cusps = []
+    for c in cusps:
+        val = (c - ayan) % 360
+        sidereal_cusps.append(val)
 
-    cusps = [c % 360 for c in cusps]
+    asc = sidereal_cusps[0]
+    mc = (ascmc[1] - ayan) % 360
 
-    result = {
+    # -------------------------
+    # 5️⃣ Return JSON
+    # -------------------------
+    return jsonify({
         "jd": jd,
-        "asc": cusps[0],
-        "cusps": cusps,
-        "mc": ascmc[1] % 360
-    }
-
-    return jsonify(result)
+        "ayanamsa": ayan,
+        "asc": asc,
+        "cusps": sidereal_cusps,
+        "mc": mc
+    })
 
 
 if __name__ == "__main__":
