@@ -6,9 +6,6 @@ app = Flask(__name__)
 
 swe.set_ephe_path(".")
 
-# KP Old = 23°34'23"
-KP_OLD_DEGREES = 23 + (34/60) + (23/3600)
-
 
 @app.route("/")
 def home():
@@ -34,31 +31,32 @@ def houses():
     except:
         return jsonify({"error": "Invalid parameters"}), 400
 
-    # Convert local time to UTC
+    # Convert local time → UTC
     decimal_hour = hour + minute / 60.0
     utc_hour = decimal_hour - tz
 
     jd = swe.julday(year, month, day, utc_hour)
 
-    # 1️⃣ Tropical houses
-    cusps, ascmc = swe.houses(jd, lat, lon, b'P')
+    # 🔥 USE BUILT-IN KP AYANAMSA
+    swe.set_sid_mode(swe.SIDM_KRISHNAMURTI)
 
-    # 2️⃣ Set KP Old ayanamsa properly
-    swe.set_sid_mode(swe.SIDM_USER, KP_OLD_DEGREES, 0)
-    ayan = swe.get_ayanamsa(jd)
+    # Direct sidereal houses (correct way)
+    cusps, ascmc = swe.houses_ex(
+        jd,
+        lat,
+        lon,
+        b'P',
+        swe.FLG_SIDEREAL
+    )
 
-    # 3️⃣ Subtract ayanamsa manually (KP method)
-    sidereal_cusps = [(c - ayan) % 360 for c in cusps]
-
-    asc = sidereal_cusps[0]
-    mc = (ascmc[1] - ayan) % 360
+    cusps = [c % 360 for c in cusps]
 
     return jsonify({
         "jd": jd,
-        "ayanamsa": ayan,
-        "asc": asc,
-        "cusps": sidereal_cusps,
-        "mc": mc
+        "ayanamsa": swe.get_ayanamsa(jd),
+        "asc": cusps[0],
+        "cusps": cusps,
+        "mc": ascmc[1] % 360
     })
 
 
