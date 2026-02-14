@@ -34,7 +34,8 @@ def houses():
         minute = int(request.args.get("minute"))
 
         lat = float(request.args.get("lat"))
-        lon = float(request.args.get("lon"))
+        lon = -float(request.args.get("lon"))
+
 
         tz = float(request.args.get("tz"))  # timezone like 5.5 for IST
 
