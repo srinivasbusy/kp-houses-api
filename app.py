@@ -1,16 +1,15 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import swisseph as swe
 
 app = Flask(__name__)
+CORS(app)   # 🔥 Enable CORS
 
-# Set Lahiri (KP compatible baseline)
 swe.set_sid_mode(swe.SIDM_LAHIRI, 0, 0)
-
 
 @app.route("/")
 def home():
     return "KP Houses API Running"
-
 
 @app.route("/houses")
 def houses():
@@ -35,7 +34,6 @@ def houses():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 400
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
