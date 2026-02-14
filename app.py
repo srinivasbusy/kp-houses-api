@@ -4,7 +4,7 @@ import swisseph as swe
 app = Flask(__name__)
 
 # Set KP-compatible Lahiri
-swe.set_sid_mode(swe.SIDM_USER, 23.5730556, 0)
+swe.set_sid_mode(swe.SIDM_USER, 84863, 0)
 
 
 @app.route("/")
