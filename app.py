@@ -4,16 +4,10 @@ import os
 
 app = Flask(__name__)
 
-# Set Swiss ephemeris path
 swe.set_ephe_path(".")
 
-# KP Old ayanamsa = 23°34'23"
-# Convert to arcseconds:
-# 23° = 23 * 3600 = 82800
-# 34' = 34 * 60 = 2040
-# 23" = 23
-# Total = 84863 arcseconds
-KP_OLD_ARCSECONDS = 84863
+# KP Old = 23°34'23"
+KP_OLD_DEGREES = 23 + (34/60) + (23/3600)
 
 
 @app.route("/")
@@ -40,40 +34,25 @@ def houses():
     except:
         return jsonify({"error": "Invalid parameters"}), 400
 
-    # -------------------------
-    # 1️⃣ Convert Local Time → UTC
-    # -------------------------
-    decimal_hour = hour + (minute / 60.0)
+    # Convert local time to UTC
+    decimal_hour = hour + minute / 60.0
     utc_hour = decimal_hour - tz
 
-    # If UTC becomes negative or > 24, Swiss handles it internally
     jd = swe.julday(year, month, day, utc_hour)
 
-    # -------------------------
-    # 2️⃣ Compute Tropical Houses
-    # -------------------------
-    cusps, ascmc = swe.houses(jd, lat, lon, b'P')  # Placidus
+    # 1️⃣ Tropical houses
+    cusps, ascmc = swe.houses(jd, lat, lon, b'P')
 
-    # -------------------------
-    # 3️⃣ Get KP Old Ayanamsa
-    # -------------------------
-    swe.set_sid_mode(swe.SIDM_USER, KP_OLD_ARCSECONDS, 0)
+    # 2️⃣ Set KP Old ayanamsa properly
+    swe.set_sid_mode(swe.SIDM_USER, KP_OLD_DEGREES, 0)
     ayan = swe.get_ayanamsa(jd)
 
-    # -------------------------
-    # 4️⃣ Convert to Sidereal (KP style)
-    # -------------------------
-    sidereal_cusps = []
-    for c in cusps:
-        val = (c - ayan) % 360
-        sidereal_cusps.append(val)
+    # 3️⃣ Subtract ayanamsa manually (KP method)
+    sidereal_cusps = [(c - ayan) % 360 for c in cusps]
 
     asc = sidereal_cusps[0]
     mc = (ascmc[1] - ayan) % 360
 
-    # -------------------------
-    # 5️⃣ Return JSON
-    # -------------------------
     return jsonify({
         "jd": jd,
         "ayanamsa": ayan,
